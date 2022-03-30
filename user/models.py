@@ -91,12 +91,15 @@ class MNISTConvNet(nn.Module):
     def forward(self, x):
         x = self.block1(x)
         x = self.block2(x)
-        x = F.elu(self.fc1(x))
-        x = F.elu(self.fc2(x))
+        x = self.fc1(x)
+        x = self.fc2(x)
         return x
 
 
 class SmallConvNet(nn.Module):
+    """ Small conv net. Suitable for 200 x 200 images
+        of type encountered in samjohns' sMRI work.
+    """
     def __init__(self):
         super().__init__()
         self.block1 = ConvPoolBlock(1, 32, 64)
