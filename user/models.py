@@ -22,7 +22,7 @@ class MRIResNet(nn.Module):
 
     def __init__(self, final_fcs=None, final_nonlin=None):
         if final_fcs is not None:
-            assert istype(final_fcs, list) and len(final_fcs) > 0
+            assert isinstance(final_fcs, list) and len(final_fcs) > 0
         else:
             final_fcs = [32]
         super().__init__()
@@ -34,6 +34,7 @@ class MRIResNet(nn.Module):
         for i in range(len(final_fcs[:-1])):
             self.fcs.append(nn.Linear(final_fcs[i], final_fcs[i+1]))
         if final_nonlin is None:
+            # defaults to elu
             self.nonlin = F.elu
         else:
             self.nonlin = final_nonlin
@@ -60,25 +61,46 @@ class MNISTResNet(nn.Module):
 
 
 class ConvPoolBlock(nn.Module):
+    """ Helper building block for larger networks.
+        Two convolutional layers followed by an optional pooling layer.
+        Pooling can also, optionally, be learnable by the second conv layer.
+    """
     def __init__(self, cin, cmid, cout, k=4, downstride=2, pool='Max'):
+        """ Two convolutional layers and one optional pooling layer.
+            Args:
+                cin, cmid, cout: three channels of two conv layers (cmid shared)
+                k: kernel for all three layers
+                downstride: the stride for downsampling
+                pool: 'Max', 'Avg' or 'Conv'; if 'Conv', pooling layer is disabled
+                    and the second Conv layer is set to downsample via stride=downstride
+            Returns:
+                An instance of a ConvPoolBlock. 
+        """
         super().__init__()
+        if pool == 'Conv':
+            self.c2stride = downstride
+        else:
+            self.c2stride = 1
         self.c1 = nn.Conv2d(cin, cmid, k, padding='same')
-        self.c2 = nn.Conv2d(cmid, cout, k, padding='same')
+        self.c2 = nn.Conv2d(cmid, cout, k, stride=self.c2stride, padding='same')
         if pool == 'Max':
             self.p = nn.MaxPool2d(k, stride=downstride)
-        else: #pool == 'Avg':
+        elif pool == 'Avg':
             self.p = nn.AvgPool2d(k, stride=downstride)
+        else:
+            self.p = None
             
     def forward(self, x):
         x = F.relu(self.c1(x))
         x = F.relu(self.c2(x))
-        x = self.p(x)
+        if self.p is not None:
+            x = self.p(x)
         return x
 
 
 class MNISTConvNet(nn.Module):
     """ Class for small from-scratch cnn.
-        Model dimensiosn are appropriate for 28x28 MNIST.
+        Model dimensions are appropriate for 28x28 MNIST.
         For testing purposes.
     """
     def __init__(self):
@@ -100,12 +122,12 @@ class SmallConvNet(nn.Module):
     """ Small conv net. Suitable for 200 x 200 images
         of type encountered in samjohns' sMRI work.
     """
-    def __init__(self):
+    def __init__(self, pool='Max'):
         super().__init__()
-        self.block1 = ConvPoolBlock(1, 32, 64)
-        self.block2 = ConvPoolBlock(64, 128, 128)
-        self.block3 = ConvPoolBlock(128, 128, 128)
-        self.block4 = ConvPoolBlock(128, 128, 64)
+        self.block1 = ConvPoolBlock(1, 32, 64, pool=pool)
+        self.block2 = ConvPoolBlock(64, 128, 128, pool=pool)
+        self.block3 = ConvPoolBlock(128, 128, 128, pool=pool)
+        self.block4 = ConvPoolBlock(128, 128, 64, pool=pool)
         self.fc1 = nn.Linear(6400, 100)
         self.fc2 = nn.Linear(100, 24)
         self.fc3 = nn.Linear(24, 1)
