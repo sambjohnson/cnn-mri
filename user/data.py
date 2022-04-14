@@ -17,6 +17,7 @@ import pandas as pd
 import numpy as np
 import os
 
+
 class ToFloat(object):
     """ Converts the datatype in sample to torch.float32 datatype.
         - helper function to be used as transform (typically from uint8 to float)
@@ -67,3 +68,27 @@ class CustomImageDataset(Dataset):
         if self.target_transform:
             label = self.target_transform(label)
         return image, label
+
+
+def get_split_indices(dataset, ratio):
+    """ Create random split into train and test sets according to ratio.
+    """
+    nsamples = len(dataset)
+    indices = list(range(nsamples))
+    ntest = nsamples // ratio
+    test_indices = list(np.random.choice(indices, size=ntest, replace=False))
+    train_indices = list(set(indices) - set(test_indices))
+    return train_indices, test_indices
+
+
+def get_train_test_split(dataset, ratio):
+    """ Function to automatically (randomly) split a dataset
+        into a train and test set, and return those in the format
+            (trainset, testset)
+        The ratio should be the ratio of the total size to the test size,
+        e.g., ratio=10 will make a testet with 1/10th of the overall data.
+    """
+    train_indices, test_indices = get_split_indices(dataset, ratio)
+    train = torch.utils.data.Subset(dataset, train_indices)
+    test = torch.utils.data.Subset(dataset, test_indices)
+    return train, test

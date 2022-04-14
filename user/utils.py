@@ -32,9 +32,11 @@ import numpy as np
 
 # --- utility functions --- #
 
+
 def get_device():
     """ Returns gpu if available, cpu otherwise."""
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 def check_requires_grad(module, allfalse=False):
     """ Checks whether all of a module's parameters
@@ -49,6 +51,7 @@ def check_requires_grad(module, allfalse=False):
     ret = all(r == (not allfalse) for r in rg)
     return ret
 
+
 def set_unfreeze_(model, submodules_to_unfreeze):
     """ In-place unfreezes only specified submodules
         given in list (submodules_to_unfreeze);
@@ -56,19 +59,20 @@ def set_unfreeze_(model, submodules_to_unfreeze):
         Useful for transfer learning with pretrained models
         and doing combined feature extraction / finetuning.
     """
-    model.requires_grad_(False) # freezes entire model
+    model.requires_grad_(False)  # freezes entire model
     for subm in submodules_to_unfreeze:
-        subm.requires_grad_(True) # unfreezes just specified sm's
+        subm.requires_grad_(True)  # unfreezes just specified sm's
     return
 
+
 def imshow(inp, title=None, normalize=False, figsize=None):
-    """Imshow for Tensor. Visualizes images in a grid."""
+    """ Imshow for Tensor. Visualizes images in a grid. """
     inp = inp.numpy().transpose((1, 2, 0))
     
     if figsize is None:
         figsize = (20, 10)
 
-    if normalize == True:
+    if normalize:
         # normalization may be required in some cases, but not here
         mean = np.array([0.485, 0.456, 0.406])
         std = np.array([0.229, 0.224, 0.225])

@@ -35,7 +35,10 @@ def train_loop(dataloader, model, loss_fn, optimizer):
         X = X_cpu.to(device) # put both model and data on gpu (if available)
         y = y_cpu.to(device)
         pred = model(X)
-        pred = torch.squeeze(pred)
+        # this is required for models with multiple returns; by assumption,
+        # the first return of a tuple is the prediction; can only squeeze a tensor
+        if isinstance(pred, tuple):
+            pred = tuple([torch.squeeze(p) for p in pred])
         loss = loss_fn(pred, y)
 
         # Backpropagation
@@ -66,7 +69,12 @@ def test_loop(dataloader, model, loss_fn):
             y = y_cpu.to(device)
 
             pred = model(X)
-            pred = torch.squeeze(pred)
+            # this is required for models with multiple returns; by assumption,
+            # the first return of a tuple is the prediction; can only squeeze a tensor
+            if isinstance(pred, tuple):
+                pred = tuple([torch.squeeze(p) for p in pred])
+            else:
+                pred = torch.squeeze(pred)
             test_loss += loss_fn(pred, y).item()
     
     test_loss /= num_batches
